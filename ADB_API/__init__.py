@@ -27,6 +27,13 @@ from .models import (
     PackageInfo,
     ProcessInfo,
 )
+from .release_build import (
+    ACEBuilder,
+    APKBuilder,
+    BuildResult,
+    ReleasePipeline,
+    ReleaseResult,
+)
 
 __all__ = [
     "ADB",
@@ -54,4 +61,9 @@ __all__ = [
     "MemoryInfo",
     "LogcatEntry",
     "ACEServerInfo",
+    "APKBuilder",
+    "ACEBuilder",
+    "ReleasePipeline",
+    "BuildResult",
+    "ReleaseResult",
 ]

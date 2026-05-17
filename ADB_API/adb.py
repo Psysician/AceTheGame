@@ -1,3 +1,4 @@
+import os
 from typing import List, Optional, Union
 
 from .ace_operations import ACEOperations
@@ -11,6 +12,7 @@ from .models import CommandResult
 from .network import NetworkManager
 from .package import PackageManager
 from .process import ProcessManager
+from .release_build import ReleasePipeline
 from .shell import ADBCommandRunner
 from .system_info import SystemInfo
 
@@ -45,6 +47,9 @@ class ADB:
             process=self.process,
             network=self.network,
             device=self.device,
+        )
+        self.release = ReleasePipeline(
+            project_root=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         )
 
     def run(
