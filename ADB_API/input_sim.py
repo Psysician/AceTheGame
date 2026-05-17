@@ -192,3 +192,24 @@ class InputSimulator:
     def auto_rotate(self, enabled: bool = True) -> None:
         val = "1" if enabled else "0"
         self._runner.run_shell(f"settings put system accelerometer_rotation {val}")
+
+    def long_press_key(self, keycode: Union[int, str]) -> None:
+        self._runner.run_shell(f"input keyevent --longpress {keycode}")
+
+    def drag_and_drop(
+        self, x1: int, y1: int, x2: int, y2: int, duration_ms: int = 1000
+    ) -> None:
+        self._runner.run_shell(f"input draganddrop {x1} {y1} {x2} {y2} {duration_ms}")
+
+    def roll(self, dx: int, dy: int) -> None:
+        self._runner.run_shell(f"input roll {dx} {dy}")
+
+    def motion_event(self, action: str, x: int, y: int) -> None:
+        self._runner.run_shell(f"input motionevent {action} {x} {y}")
+
+    def key_combination(self, *keycodes: Union[int, str]) -> None:
+        codes = " ".join(str(k) for k in keycodes)
+        self._runner.run_shell(f"input keycombination {codes}")
+
+    def press(self) -> None:
+        self._runner.run_shell("input press")

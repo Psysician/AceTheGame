@@ -154,3 +154,68 @@ class DeviceManager:
         if val:
             return [abi.strip() for abi in val.split(",") if abi.strip()]
         return [self.get_abi()] if self.get_abi() else []
+
+    def pair(self, host: str, port: int, pairing_code: str) -> bool:
+        result = self._runner.run_adb(["pair", f"{host}:{port}", pairing_code])
+        return "successfully paired" in result.output.lower()
+
+    def reconnect(self, mode: Optional[str] = None) -> None:
+        args = ["reconnect"]
+        if mode:
+            args.append(mode)
+        self._runner.run_adb(args)
+
+    def get_devpath(self) -> str:
+        result = self._runner.run_adb(["get-devpath"])
+        return result.output
+
+    def wait_for_recovery(self, timeout: int = 60) -> bool:
+        try:
+            self._runner.run_adb(["wait-for-recovery"], timeout=timeout)
+            return True
+        except Exception:
+            return False
+
+    def wait_for_sideload(self, timeout: int = 60) -> bool:
+        try:
+            self._runner.run_adb(["wait-for-sideload"], timeout=timeout)
+            return True
+        except Exception:
+            return False
+
+    def wait_for_bootloader(self, timeout: int = 60) -> bool:
+        try:
+            self._runner.run_adb(["wait-for-bootloader"], timeout=timeout)
+            return True
+        except Exception:
+            return False
+
+    def wait_for_disconnect(self, timeout: int = 60) -> bool:
+        try:
+            self._runner.run_adb(["wait-for-disconnect"], timeout=timeout)
+            return True
+        except Exception:
+            return False
+
+    def get_bootloader_version(self) -> str:
+        return self.get_property("ro.boot.bootloader")
+
+    def get_secure_status(self) -> bool:
+        return self.get_property("ro.secure") == "1"
+
+    def get_boot_fingerprint(self) -> str:
+        return self.get_property("ro.bootimage.build.fingerprint")
+
+    def get_usb_mode(self) -> str:
+        return self.get_property("persist.sys.usb.config")
+
+    def set_usb_mode(self, config: str) -> None:
+        self.set_property("persist.sys.usb.config", config)
+
+    def mdns_check(self) -> str:
+        result = self._runner.run_adb(["mdns", "check"])
+        return result.output
+
+    def mdns_services(self) -> List[str]:
+        result = self._runner.run_adb(["mdns", "services"])
+        return result.lines

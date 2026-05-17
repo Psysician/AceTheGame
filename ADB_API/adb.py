@@ -3,7 +3,11 @@ from typing import List, Optional, Union
 
 from .ace_operations import ACEOperations
 from .activity import ActivityManager
+from .app_ops import AppOpsManager
+from .backup_manager import BackupManager
+from .content_provider import ContentProvider
 from .device import DeviceManager
+from .device_policy import DevicePolicyManager
 from .file_system import FileSystem
 from .file_transfer import FileTransfer
 from .input_sim import InputSimulator
@@ -51,6 +55,10 @@ class ADB:
         self.release = ReleasePipeline(
             project_root=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         )
+        self.content = ContentProvider(self._runner)
+        self.appops = AppOpsManager(self._runner)
+        self.backup_mgr = BackupManager(self._runner)
+        self.dpm = DevicePolicyManager(self._runner)
 
     def run(
         self, args: List[str], timeout: Optional[int] = None
@@ -143,6 +151,82 @@ class ADB:
 
     def uninstall(self, package_name: str, **kwargs) -> None:
         self.packages.uninstall(package_name, **kwargs)
+
+    def pair(self, host: str, port: int, pairing_code: str) -> bool:
+        return self.device.pair(host, port, pairing_code)
+
+    def reconnect(self, mode: Optional[str] = None) -> None:
+        self.device.reconnect(mode)
+
+    def sideload(self, filepath: str) -> str:
+        result = self._runner.run_adb(["sideload", filepath], timeout=600)
+        return result.output
+
+    def disable_verity(self) -> str:
+        result = self._runner.run_adb(["disable-verity"])
+        return result.output
+
+    def enable_verity(self) -> str:
+        result = self._runner.run_adb(["enable-verity"])
+        return result.output
+
+    def exec_out(self, command: str) -> bytes:
+        import subprocess
+        cmd = [self._runner._adb_path]
+        if self._runner.device_serial:
+            cmd.extend(["-s", self._runner.device_serial])
+        cmd.extend(["exec-out", command])
+        proc = subprocess.run(cmd, capture_output=True, timeout=self._runner._default_timeout)
+        return proc.stdout
+
+    def emu(self, command: str) -> str:
+        result = self._runner.run_adb(["emu", command])
+        return result.output
+
+    def backup(
+        self,
+        output_file: str,
+        packages: Optional[List[str]] = None,
+        apk: bool = False,
+        shared: bool = False,
+        system: bool = True,
+        all_packages: bool = False,
+    ) -> None:
+        args = ["backup", "-f", output_file]
+        if apk:
+            args.append("-apk")
+        else:
+            args.append("-noapk")
+        if shared:
+            args.append("-shared")
+        else:
+            args.append("-noshared")
+        if system:
+            args.append("-system")
+        else:
+            args.append("-nosystem")
+        if all_packages:
+            args.append("-all")
+        if packages:
+            args.extend(packages)
+        self._runner.run_adb(args, timeout=600)
+
+    def restore(self, backup_file: str) -> None:
+        self._runner.run_adb(["restore", backup_file], timeout=600)
+
+    def get_devpath(self) -> str:
+        return self.device.get_devpath()
+
+    def install_multi_package(self, apk_paths: List[str], **kwargs) -> None:
+        args = ["install-multi-package"]
+        if kwargs.get("reinstall"):
+            args.append("-r")
+        if kwargs.get("allow_downgrade"):
+            args.append("-d")
+        if kwargs.get("grant_permissions"):
+            args.append("-g")
+        args.extend(apk_paths)
+        self._runner.run_adb(args, timeout=120)
 
     def __repr__(self) -> str:
         serial = self._runner.device_serial or "auto"

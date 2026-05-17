@@ -80,3 +80,9 @@ class NetworkManager:
 
     def forward_localabstract(self, local_port: int, socket_name: str) -> None:
         self.forward(f"tcp:{local_port}", f"localabstract:{socket_name}")
+
+    def forward_localreserved(self, local_port: int, socket_name: str) -> None:
+        self.forward(f"tcp:{local_port}", f"localreserved:{socket_name}")
+
+    def forward_vsock(self, local_port: int, cid: int, remote_port: int) -> None:
+        self.forward(f"tcp:{local_port}", f"vsock:{cid}:{remote_port}")

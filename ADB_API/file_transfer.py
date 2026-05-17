@@ -9,25 +9,52 @@ class FileTransfer:
     def __init__(self, runner: ADBCommandRunner):
         self._runner = runner
 
-    def push(self, local_path: str, remote_path: str, sync: bool = False) -> None:
+    def push(
+        self,
+        local_path: str,
+        remote_path: str,
+        sync: bool = False,
+        compress: Optional[str] = None,
+        no_compress: bool = False,
+    ) -> None:
         if not os.path.exists(local_path):
             raise FileTransferError("push", local_path, remote_path, "local file not found")
 
         args = ["push"]
         if sync:
             args.append("--sync")
+        if compress:
+            args.extend(["-z", compress])
+        elif no_compress:
+            args.append("-Z")
         args.extend([local_path, remote_path])
 
         result = self._runner.run_adb(args, timeout=300)
         if not result.success and "error" in result.stderr.lower():
             raise FileTransferError("push", local_path, remote_path, result.stderr.strip())
 
-    def pull(self, remote_path: str, local_path: str) -> None:
+    def pull(
+        self,
+        remote_path: str,
+        local_path: str,
+        preserve_attrs: bool = False,
+        compress: Optional[str] = None,
+        no_compress: bool = False,
+    ) -> None:
         local_dir = os.path.dirname(local_path)
         if local_dir and not os.path.exists(local_dir):
             os.makedirs(local_dir, exist_ok=True)
 
-        result = self._runner.run_adb(["pull", remote_path, local_path], timeout=300)
+        args = ["pull"]
+        if preserve_attrs:
+            args.append("-a")
+        if compress:
+            args.extend(["-z", compress])
+        elif no_compress:
+            args.append("-Z")
+        args.extend([remote_path, local_path])
+
+        result = self._runner.run_adb(args, timeout=300)
         if not result.success and "error" in result.stderr.lower():
             raise FileTransferError("pull", local_path, remote_path, result.stderr.strip())
 
@@ -47,8 +74,20 @@ class FileTransfer:
         if not result.success and "error" in result.stderr.lower():
             raise FileTransferError("pull", local_dir, remote_dir, result.stderr.strip())
 
-    def sync(self, partition: Optional[str] = None) -> None:
+    def sync(
+        self,
+        partition: Optional[str] = None,
+        list_only: bool = False,
+        compress: Optional[str] = None,
+        no_compress: bool = False,
+    ) -> None:
         args = ["sync"]
+        if list_only:
+            args.append("-l")
+        if compress:
+            args.extend(["-z", compress])
+        elif no_compress:
+            args.append("-Z")
         if partition:
             args.append(partition)
         self._runner.run_adb(args, timeout=600)

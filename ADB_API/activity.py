@@ -160,3 +160,85 @@ class ActivityManager:
 
     def send_trimming(self, level: str = "COMPLETE") -> None:
         self._runner.run_shell(f"am send-trim-memory {level}")
+
+    def restart(self) -> None:
+        self._runner.run_shell("am restart")
+
+    def hang(self, allow_restart: bool = False) -> None:
+        cmd = "am hang"
+        if allow_restart:
+            cmd += " --allow-restart"
+        self._runner.run_shell(cmd)
+
+    def idle_maintenance(self) -> None:
+        self._runner.run_shell("am idle-maintenance")
+
+    def screen_compat(self, package_name: str, enabled: bool) -> None:
+        state = "on" if enabled else "off"
+        self._runner.run_shell(f"am screen-compat {state} {package_name}")
+
+    def switch_user(self, user_id: int) -> None:
+        self._runner.run_shell(f"am switch-user {user_id}")
+
+    def start_user(self, user_id: int) -> None:
+        self._runner.run_shell(f"am start-user {user_id}")
+
+    def stop_user(self, user_id: int, wait: bool = False, force: bool = False) -> None:
+        cmd = "am stop-user"
+        if wait:
+            cmd += " -w"
+        if force:
+            cmd += " -f"
+        cmd += f" {user_id}"
+        self._runner.run_shell(cmd)
+
+    def get_current_user(self) -> str:
+        result = self._runner.run_shell("am get-current-user")
+        return result.output
+
+    def get_config(self) -> str:
+        result = self._runner.run_shell("am get-config")
+        return result.output
+
+    def set_inactive(self, package_name: str, inactive: bool) -> None:
+        val = "true" if inactive else "false"
+        self._runner.run_shell(f"am set-inactive {package_name} {val}")
+
+    def get_inactive(self, package_name: str) -> str:
+        result = self._runner.run_shell(f"am get-inactive {package_name}")
+        return result.output
+
+    def make_uid_idle(self, package_name: str) -> None:
+        self._runner.run_shell(f"am make-uid-idle {package_name}")
+
+    def to_uri(self, intent_args: str) -> str:
+        result = self._runner.run_shell(f"am to-uri {intent_args}")
+        return result.output
+
+    def to_intent_uri(self, intent_args: str) -> str:
+        result = self._runner.run_shell(f"am to-intent-uri {intent_args}")
+        return result.output
+
+    def to_app_uri(self, intent_args: str) -> str:
+        result = self._runner.run_shell(f"am to-app-uri {intent_args}")
+        return result.output
+
+    def stack_list(self) -> str:
+        result = self._runner.run_shell("am stack list")
+        return result.output
+
+    def stack_info(self, stack_id: int) -> str:
+        result = self._runner.run_shell(f"am stack info {stack_id}")
+        return result.output
+
+    def suppress_resize_config_changes(self, suppress: bool) -> None:
+        val = "true" if suppress else "false"
+        self._runner.run_shell(f"am suppress-resize-config-changes {val}")
+
+    def start_activity_as_user(self, component: str, user_id: int, wait: bool = False) -> str:
+        cmd = "am start"
+        if wait:
+            cmd += " -W"
+        cmd += f" --user {user_id} -n {component}"
+        result = self._runner.run_shell(cmd)
+        return result.output

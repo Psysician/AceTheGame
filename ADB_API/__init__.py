@@ -1,4 +1,8 @@
 from .adb import ADB
+from .app_ops import AppOpsManager
+from .backup_manager import BackupManager
+from .content_provider import ContentProvider
+from .device_policy import DevicePolicyManager
 from .exceptions import (
     ACEOperationError,
     ADBError,
@@ -37,6 +41,10 @@ from .release_build import (
 
 __all__ = [
     "ADB",
+    "AppOpsManager",
+    "BackupManager",
+    "ContentProvider",
+    "DevicePolicyManager",
     "ADBError",
     "ADBNotFoundError",
     "DeviceNotFoundError",

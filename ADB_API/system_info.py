@@ -1,5 +1,5 @@
 import re
-from typing import Dict, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from .models import BatteryInfo, MemoryInfo
 from .shell import ADBCommandRunner
@@ -222,3 +222,97 @@ class SystemInfo:
         if match:
             return int(match.group(1)) * 1024
         return 0
+
+    def get_device_time(self) -> str:
+        result = self._runner.run_shell("date")
+        return result.output
+
+    def set_device_time(self, time_str: str) -> None:
+        self._runner.run_shell(f"date {time_str}")
+
+    def delete_settings(self, namespace: str, key: str) -> None:
+        self._runner.run_shell(f"settings delete {namespace} {key}")
+
+    def list_settings(self, namespace: str) -> Dict[str, str]:
+        result = self._runner.run_shell(f"settings list {namespace}")
+        settings = {}
+        for line in result.lines:
+            if "=" in line:
+                key, _, val = line.partition("=")
+                settings[key.strip()] = val.strip()
+        return settings
+
+    def reset_settings(self, namespace: str) -> None:
+        self._runner.run_shell(f"settings reset {namespace}")
+
+    def wm_overscan(self, left: int, top: int, right: int, bottom: int) -> None:
+        self._runner.run_shell(f"wm overscan {left},{top},{right},{bottom}")
+
+    def wm_reset_overscan(self) -> None:
+        self._runner.run_shell("wm overscan reset")
+
+    def wm_scaling(self, mode: str = "auto") -> None:
+        self._runner.run_shell(f"wm scaling {mode}")
+
+    def wm_dismiss_keyguard(self) -> None:
+        self._runner.run_shell("wm dismiss-keyguard")
+
+    def wm_set_user_rotation(self, mode: str = "free", rotation: Optional[int] = None) -> None:
+        cmd = f"wm set-user-rotation {mode}"
+        if rotation is not None:
+            cmd += f" {rotation}"
+        self._runner.run_shell(cmd)
+
+    def wm_fix_to_user_rotation(self, state: str = "default") -> None:
+        self._runner.run_shell(f"wm set-fix-to-user-rotation {state}")
+
+    def get_selinux_status(self) -> str:
+        result = self._runner.run_shell("getenforce")
+        return result.output
+
+    def set_selinux_mode(self, mode: str) -> None:
+        self._runner.run_shell(f"setenforce {mode}", as_root=True)
+
+    def get_kernel_cmdline(self) -> str:
+        result = self._runner.run_shell("cat /proc/cmdline")
+        return result.output
+
+    def service_call(self, service: str, code: int, *args: str) -> str:
+        arg_str = " ".join(args)
+        result = self._runner.run_shell(f"service call {service} {code} {arg_str}")
+        return result.output
+
+    def service_check(self, service: str) -> bool:
+        result = self._runner.run_shell(f"service check {service}")
+        return "found" in result.output.lower()
+
+    def cmd(self, service: str, *args: str) -> str:
+        arg_str = " ".join(args)
+        result = self._runner.run_shell(f"cmd {service} {arg_str}")
+        return result.output
+
+    def cmd_overlay_enable(self, package: str) -> None:
+        self._runner.run_shell(f"cmd overlay enable {package}")
+
+    def cmd_overlay_disable(self, package: str) -> None:
+        self._runner.run_shell(f"cmd overlay disable {package}")
+
+    def cmd_overlay_list(self) -> str:
+        result = self._runner.run_shell("cmd overlay list")
+        return result.output
+
+    def list_displays(self) -> str:
+        result = self._runner.run_shell("dumpsys display")
+        return result.output
+
+    def atrace_list_categories(self) -> List[str]:
+        result = self._runner.run_shell("atrace --list_categories")
+        return result.lines
+
+    def atrace_start(self, categories: List[str], buffer_size: int = 2048) -> None:
+        cats = " ".join(categories)
+        self._runner.run_shell(f"atrace -b {buffer_size} {cats}")
+
+    def atrace_stop(self) -> str:
+        result = self._runner.run_shell("atrace --async_stop")
+        return result.output

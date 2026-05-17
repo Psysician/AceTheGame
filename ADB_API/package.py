@@ -205,3 +205,103 @@ class PackageManager:
             if lib:
                 libs.append(lib)
         return libs
+
+    def list_permission_groups(self) -> List[str]:
+        result = self._runner.run_shell("pm list permission-groups")
+        return [line.replace("permission-group:", "").strip() for line in result.lines if line.strip()]
+
+    def list_permissions_detailed(self, group: Optional[str] = None, dangerous_only: bool = False) -> List[str]:
+        cmd = "pm list permissions"
+        if dangerous_only:
+            cmd += " -d"
+        if group:
+            cmd += f" {group}"
+        result = self._runner.run_shell(cmd)
+        return [line.replace("permission:", "").strip() for line in result.lines if "permission:" in line]
+
+    def list_instrumentation(self, target_package: Optional[str] = None) -> List[str]:
+        cmd = "pm list instrumentation"
+        if target_package:
+            cmd += f" {target_package}"
+        result = self._runner.run_shell(cmd)
+        return [line.replace("instrumentation:", "").strip() for line in result.lines if line.strip()]
+
+    def list_users(self) -> List[str]:
+        result = self._runner.run_shell("pm list users")
+        return [line.strip() for line in result.lines if "UserInfo" in line]
+
+    def dump(self, package_name: str) -> str:
+        result = self._runner.run_shell(f"pm dump {package_name}")
+        return result.stdout
+
+    def hide(self, package_name: str) -> None:
+        self._runner.run_shell(f"pm hide {package_name}")
+
+    def unhide(self, package_name: str) -> None:
+        self._runner.run_shell(f"pm unhide {package_name}")
+
+    def suspend(self, package_name: str) -> None:
+        self._runner.run_shell(f"pm suspend {package_name}")
+
+    def unsuspend(self, package_name: str) -> None:
+        self._runner.run_shell(f"pm unsuspend {package_name}")
+
+    def reset_permissions(self) -> None:
+        self._runner.run_shell("pm reset-permissions")
+
+    def set_permission_enforced(self, permission: str, enforced: bool) -> None:
+        val = "true" if enforced else "false"
+        self._runner.run_shell(f"pm set-permission-enforced {permission} {val}")
+
+    def trim_caches(self, free_space: str) -> None:
+        self._runner.run_shell(f"pm trim-caches {free_space}")
+
+    def create_user(self, user_name: str) -> str:
+        result = self._runner.run_shell(f"pm create-user {user_name}")
+        return result.output
+
+    def remove_user(self, user_id: int) -> None:
+        self._runner.run_shell(f"pm remove-user {user_id}")
+
+    def get_max_users(self) -> int:
+        result = self._runner.run_shell("pm get-max-users")
+        import re
+        match = re.search(r'(\d+)', result.output)
+        return int(match.group(1)) if match else 0
+
+    def compile_package(self, package_name: str, mode: str = "speed", force: bool = False, reset: bool = False) -> None:
+        cmd = f"cmd package compile -m {mode}"
+        if force:
+            cmd += " -f"
+        if reset:
+            cmd += " --reset"
+        cmd += f" {package_name}"
+        self._runner.run_shell(cmd)
+
+    def compile_all(self, mode: str = "speed") -> None:
+        self._runner.run_shell(f"cmd package compile -m {mode} -a")
+
+    def force_dex_opt(self, package_name: str) -> None:
+        self._runner.run_shell(f"cmd package force-dex-opt {package_name}")
+
+    def bg_dexopt_job(self) -> None:
+        self._runner.run_shell("cmd package bg-dexopt-job")
+
+    def move_package(self, package_name: str, volume: str = "internal") -> None:
+        self._runner.run_shell(f"pm move-package {package_name} {volume}")
+
+    def move_primary_storage(self, volume: str = "internal") -> None:
+        self._runner.run_shell(f"pm move-primary-storage {volume}")
+
+    def set_app_links(self, package_name: str, state: str = "verified") -> None:
+        self._runner.run_shell(f"pm set-app-links --package {package_name} {state}")
+
+    def get_app_links(self, package_name: str) -> str:
+        result = self._runner.run_shell(f"pm get-app-links {package_name}")
+        return result.output
+
+    def default_state(self, package_name: str) -> None:
+        self._runner.run_shell(f"pm default-state {package_name}")
+
+    def install_streaming(self, apk_path: str) -> None:
+        self._runner.run_shell(f"pm install -S {os.path.getsize(apk_path)} < {apk_path}")
