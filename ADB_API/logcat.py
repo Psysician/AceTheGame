@@ -77,8 +77,9 @@ class LogcatManager:
         tags: Optional[List[str]] = None,
         priority: Optional[str] = None,
         buffer: Optional[str] = None,
+        max_count: Optional[int] = None,
     ) -> None:
-        entries = self.dump_raw(tags=tags, priority=priority, buffer=buffer)
+        entries = self.dump_raw(tags=tags, priority=priority, buffer=buffer, max_count=max_count)
         with open(filepath, "w") as f:
             f.write("\n".join(entries))
 
