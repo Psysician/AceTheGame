@@ -38,7 +38,7 @@ class ACE(context: Context) {
     }
 
     enum class NumType {
-        _int, _long, _short, _float, _byte;
+        _int, _long, _short, _float, _byte, _string, _aob;
 
 
         @Override
@@ -51,6 +51,10 @@ class ACE(context: Context) {
                 var s = s
                 if (s[0] != '_') s = "_$s"
                 return valueOf(s)
+            }
+
+            fun isPatternType(type: NumType): Boolean {
+                return type == _string || type == _aob
             }
         }
     }
@@ -161,6 +165,8 @@ class ACE(context: Context) {
     }
 
     fun GetNumTypeAndBitSize(numType: NumType): String {
+        if (numType == NumType._string) return "string (text)"
+        if (numType == NumType._aob) return "aob (byte pattern)"
         val bitSize: Int? = GetNumTypeBitSize(numType)
         return String.format("%s (%d bit)", numType.toString(), bitSize)
     }
@@ -358,6 +364,42 @@ class ACE(context: Context) {
         val out = UtilCmdAsList(arrayOf("info", "operator"))
         for (s in out) availableOperators.add(operatorEnumToSymbolBiMap.inverse().get(s)!!)
         return availableOperators
+    }
+
+    // =============== String/AOB scan commands ===================
+
+    fun ScanString(searchStr: String, encoding: String = "ascii", caseSensitive: Boolean = true) {
+        val cmd = mutableListOf("scan_str", searchStr, "--encoding", encoding)
+        if (!caseSensitive) cmd.add("--nocase")
+        CheaterCmd(cmd.toTypedArray())
+    }
+
+    fun ScanAOB(pattern: String) {
+        CheaterCmd(arrayOf("scan_aob", pattern))
+    }
+
+    fun GetStringMatchCount(): Int {
+        return CheaterCmd(arrayOf("str_matchcount")).toInt()
+    }
+
+    fun ListStringMatches(maxCount: Int): List<MatchInfo> {
+        val matches: MutableList<MatchInfo> = mutableListOf()
+        val matchesStr = CheaterCmdAsList(arrayOf("str_list", "--max-count", maxCount.toString()))
+        for (s: String in matchesStr) {
+            val parts = s.split(" ", limit = 2)
+            if (parts.size >= 2) {
+                matches.add(MatchInfo(parts[0], parts[1]))
+            }
+        }
+        return matches
+    }
+
+    fun ResetStringMatches() {
+        CheaterCmd(arrayOf("str_reset"))
+    }
+
+    fun WriteStringAt(address: String, value: String, encoding: String = "ascii") {
+        CheaterCmd(arrayOf("str_write", address, value, "--encoding", encoding))
     }
 
     companion object {

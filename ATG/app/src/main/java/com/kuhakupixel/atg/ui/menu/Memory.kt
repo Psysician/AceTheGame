@@ -231,7 +231,12 @@ fun _MemoryMenu(
                 //
                 newScanEnabled = isAttached && initialScanDone.value && !isScanOnGoing.value,
                 newScanClicked = {
-                    ace.ResetMatches()
+                    val currentType = NumType.values()[valueTypeSelectedOptionIdx.value]
+                    if (NumType.isPatternType(currentType)) {
+                        ace.ResetStringMatches()
+                    } else {
+                        ace.ResetMatches()
+                    }
                     UpdateMatches(ace = ace)
                     initialScanDone.value = false
                 },
@@ -318,13 +323,20 @@ private fun MatchesTable(
 }
 
 private fun UpdateMatches(ace: ACE) {
-    val matchesCount: Int = ace.GetMatchCount()
-    val shownMatchesCount: Int = min(matchesCount, ATGSettings.maxShownMatchesCount)
-    // update ui
-    currentMatchesList.value = ace.ListMatches(ATGSettings.maxShownMatchesCount)
+    val currentType = NumType.values()[valueTypeSelectedOptionIdx.value]
+    val matchesCount: Int
+    val shownMatchesCount: Int
+
+    if (NumType.isPatternType(currentType)) {
+        matchesCount = ace.GetStringMatchCount()
+        shownMatchesCount = min(matchesCount, ATGSettings.maxShownMatchesCount)
+        currentMatchesList.value = ace.ListStringMatches(ATGSettings.maxShownMatchesCount)
+    } else {
+        matchesCount = ace.GetMatchCount()
+        shownMatchesCount = min(matchesCount, ATGSettings.maxShownMatchesCount)
+        currentMatchesList.value = ace.ListMatches(ATGSettings.maxShownMatchesCount)
+    }
     matchesStatusText.value = "$matchesCount matches (showing ${shownMatchesCount})"
-
-
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -353,13 +365,29 @@ private fun MatchesSetting(
 ) {
     @Composable
     fun ScanInputField(scanValue: MutableState<String>) {
+        val currentType = NumType.values()[valueTypeSelectedOptionIdx.value]
+        val label = when (currentType) {
+            NumType._string -> "Search String"
+            NumType._aob -> "AOB Pattern (hex)"
+            else -> "Scan For"
+        }
+        val placeholder = when (currentType) {
+            NumType._string -> "text to find ..."
+            NumType._aob -> "4A 3B ?? 7F 00 ..."
+            else -> "value ..."
+        }
+        val kbType = when (currentType) {
+            NumType._string, NumType._aob -> androidx.compose.ui.text.input.KeyboardType.Text
+            else -> androidx.compose.ui.text.input.KeyboardType.Number
+        }
         NumberInputField(
             value = scanValue.value,
             onValueChange = { value ->
                 scanValue.value = value
             },
-            label = "Scan For",
-            placeholder = "value ...",
+            label = label,
+            placeholder = placeholder,
+            keyboardType = kbType,
         )
     }
 

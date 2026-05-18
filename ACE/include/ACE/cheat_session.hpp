@@ -4,6 +4,7 @@
 #include "engine_module.hpp"
 #include "input.hpp"
 #include "status_publisher.hpp"
+#include "string_scanner.hpp"
 
 /*
  * core logic of the cheater mode
@@ -21,6 +22,8 @@ private:
   engine_module<short> *engine_module_ptr_short = NULL;
   engine_module<byte> *engine_module_ptr_byte = NULL;
   engine_module<float> *engine_module_ptr_float = NULL;
+  // string/AOB scanner
+  string_scanner *str_scanner = NULL;
   //
   E_num_type current_num_type;
   //

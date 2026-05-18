@@ -16,6 +16,7 @@ fun NumberInputField(
     label: String = "",
     placeholder: String = "",
     onValueChange: (String) -> Unit,
+    keyboardType: KeyboardType = KeyboardType.Number,
 ) {
 
     TextField(
@@ -23,14 +24,11 @@ fun NumberInputField(
         enabled = enabled,
         value = value,
         onValueChange = { value ->
-            // make sure we don't pass in value with \n
-            // because of enter, because that will cause the caller
-            // parsing problem
             onValueChange(value.replace("\n", ""))
         },
         label = { Text(text = label) },
         placeholder = { Text(text = placeholder) },
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+        keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
         singleLine = true,
     )
 }

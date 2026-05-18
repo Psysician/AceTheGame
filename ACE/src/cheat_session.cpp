@@ -6,6 +6,7 @@
 #include "ACE/input.hpp"
 #include "ACE/proc_stat.hpp"
 #include "ACE/ptrace.hpp"
+#include "ACE/string_scanner.hpp"
 #include "ACE/to_frontend.hpp"
 
 // =================================================
@@ -242,6 +243,125 @@ cheat_session::_cheat_cmd(engine_module<T> *engine_module_ptr,
       }
 
   );
+
+  // ================ scan_str command ===============================
+  CLI::App *scan_str_cmd = app.add_subcommand(
+      "scan_str", "scan for a string value in process memory");
+
+  scan_str_cmd
+      ->add_option("<VALUE>", cheat_args.str_val, "string to search for")
+      ->required();
+
+  std::string str_encoding_str = "ascii";
+  scan_str_cmd->add_option("--encoding", str_encoding_str,
+                           "encoding: ascii, utf8, utf16le");
+
+  bool case_sensitive = true;
+  scan_str_cmd->add_flag("--nocase", case_sensitive,
+                         "case insensitive search");
+
+  scan_str_cmd->callback([&]() {
+    E_string_encoding enc = E_string_encoding::ASCII;
+    if (str_encoding_str == "utf8")
+      enc = E_string_encoding::UTF8;
+    else if (str_encoding_str == "utf16le")
+      enc = E_string_encoding::UTF16LE;
+
+    string_scanner *ss = this->str_scanner;
+    ss->set_region_level(scanner->get_region_level());
+
+    if (!ss->get_first_scan_done()) {
+      ss->first_scan_string(cheat_args.str_val, enc, case_sensitive);
+    } else {
+      ss->next_scan_string(cheat_args.str_val, enc, case_sensitive);
+    }
+    frontend::print("%zu matches\n", ss->get_match_count());
+  });
+
+  // ================ scan_aob command ===============================
+  CLI::App *scan_aob_cmd = app.add_subcommand(
+      "scan_aob", "scan for array of bytes pattern (hex with ? wildcards)");
+
+  scan_aob_cmd
+      ->add_option("<PATTERN>", cheat_args.str_val,
+                   "hex pattern e.g. '4A 3B ?? 7F 00'")
+      ->required();
+
+  scan_aob_cmd->callback([&]() {
+    string_scanner *ss = this->str_scanner;
+    ss->set_region_level(scanner->get_region_level());
+
+    if (!ss->get_first_scan_done()) {
+      ss->first_scan_aob(cheat_args.str_val);
+    } else {
+      ss->next_scan_aob(cheat_args.str_val);
+    }
+    frontend::print("%zu matches\n", ss->get_match_count());
+  });
+
+  // ================ str_list command ===============================
+  CLI::App *str_list_cmd = app.add_subcommand(
+      "str_list", "list string/aob scan matches with addresses");
+
+  int str_list_max = 100;
+  str_list_cmd->add_option("-n,--max-count", str_list_max);
+
+  str_list_cmd->callback([&]() {
+    string_scanner *ss = this->str_scanner;
+    const auto &matches = ss->get_matches();
+    size_t count = std::min((size_t)str_list_max, matches.size());
+    for (size_t i = 0; i < count; i++) {
+      std::string hex_str;
+      for (byte b : matches[i].matched_bytes) {
+        char hex[4];
+        snprintf(hex, sizeof(hex), "%02X ", (unsigned char)b);
+        hex_str += hex;
+      }
+      frontend::print("%llu %s\n", (unsigned long long)matches[i].address,
+                      hex_str.c_str());
+    }
+  });
+
+  // ================ str_reset command ===============================
+  CLI::App *str_reset_cmd = app.add_subcommand(
+      "str_reset", "reset string/aob scan results");
+
+  str_reset_cmd->callback([&]() {
+    this->str_scanner->reset_scan();
+    frontend::print("string scan reset\n");
+  });
+
+  // ================ str_write command ===============================
+  CLI::App *str_write_cmd = app.add_subcommand(
+      "str_write", "write a string to an address");
+
+  ADDR str_write_addr = 0;
+  std::string str_write_val;
+  std::string str_write_enc = "ascii";
+
+  str_write_cmd->add_option("<ADDRESS>", str_write_addr)->required();
+  str_write_cmd->add_option("<VALUE>", str_write_val)->required();
+  str_write_cmd->add_option("--encoding", str_write_enc);
+
+  str_write_cmd->callback([&]() {
+    E_string_encoding enc = E_string_encoding::ASCII;
+    if (str_write_enc == "utf8")
+      enc = E_string_encoding::UTF8;
+    else if (str_write_enc == "utf16le")
+      enc = E_string_encoding::UTF16LE;
+
+    this->str_scanner->write_string_at(str_write_addr, str_write_val, enc);
+    frontend::print("written string to %llu\n",
+                    (unsigned long long)str_write_addr);
+  });
+
+  // ================ str_matchcount command ===============================
+  CLI::App *str_matchcount_cmd = app.add_subcommand(
+      "str_matchcount", "get match count of string/aob scan");
+
+  str_matchcount_cmd->callback([&]() {
+    frontend::print("%zu\n", this->str_scanner->get_match_count());
+  });
 
   // ================ writeat command ===============================
 
@@ -605,6 +725,8 @@ cheat_session::cheat_session(int pid, E_num_type current_num_type,
       new engine_module<byte>(pid, on_scan_progress, on_scan_done);
   this->engine_module_ptr_float =
       new engine_module<float>(pid, on_scan_progress, on_scan_done);
+  this->str_scanner =
+      new string_scanner(pid, on_scan_progress, on_scan_done);
 }
 
 cheat_session::~cheat_session() {
@@ -614,6 +736,7 @@ cheat_session::~cheat_session() {
   delete this->engine_module_ptr_short;
   delete this->engine_module_ptr_byte;
   delete this->engine_module_ptr_float;
+  delete this->str_scanner;
 }
 
 E_loop_statement cheat_session::on_each_input(std::string input_str) {

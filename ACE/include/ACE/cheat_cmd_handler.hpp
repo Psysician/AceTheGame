@@ -32,6 +32,8 @@ template <typename T> struct cheat_mode_args {
   size_t list_max_count;
   size_t read_arr_read_length;
 
+  std::string str_val;
+
   cheat_mode_args();
 };
 

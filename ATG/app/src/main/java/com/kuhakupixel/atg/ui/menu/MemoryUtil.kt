@@ -35,18 +35,23 @@ fun onNextScanClicked(
     CompletableFuture.supplyAsync<Unit> {
         // set the value type
         if (!scanOptions.initialScanDone) {
-            ace.SetNumType(scanOptions.numType)
+            if (!ACE.NumType.isPatternType(scanOptions.numType)) {
+                ace.SetNumType(scanOptions.numType)
+            }
             ace.SetRegionLevel(scanOptions.regionLevel)
-
         }
-        /**
-         * scan against a value if input value
-         * is not empty
-         * and scan without value otherwise
-         * (picking addresses whose value stayed the same, increased and etc)
-         * */
 
-        if (scanOptions.inputVal.isBlank()) {
+        if (ACE.NumType.isPatternType(scanOptions.numType)) {
+            when (scanOptions.numType) {
+                ACE.NumType._string -> {
+                    ace.ScanString(scanOptions.inputVal)
+                }
+                ACE.NumType._aob -> {
+                    ace.ScanAOB(scanOptions.inputVal)
+                }
+                else -> {}
+            }
+        } else if (scanOptions.inputVal.isBlank()) {
             ace.ScanWithoutValue(scanOptions.scanType)
         } else {
             ace.ScanAgainstValue(

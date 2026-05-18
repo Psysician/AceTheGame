@@ -81,15 +81,15 @@ add_library(common_flag INTERFACE)
 target_compile_options(common_flag INTERFACE -Wall -Werror)
 
 
-set(lib_ACE_src 
+set(lib_ACE_src
 	src/maps.cpp src/file_utils.cpp src/error.cpp
 	src/str_utils.cpp src/proc_stat.cpp src/scanner.cpp src/ACE_global.cpp src/ptrace.cpp
-	src/input.cpp src/cheat.cpp src/cheat_cmd_handler.cpp src/ace_type.cpp 
-	src/common.cpp src/proc_rw.cpp src/proc_create.cpp src/endian.cpp src/aslr_edit.cpp 
+	src/input.cpp src/cheat.cpp src/cheat_cmd_handler.cpp src/ace_type.cpp
+	src/common.cpp src/proc_rw.cpp src/proc_create.cpp src/endian.cpp src/aslr_edit.cpp
 	src/main_cmd_handler.cpp src/loaded_mem_info.cpp src/scan_utils.cpp src/thread_continuous.cpp src/freeze.cpp
 	src/to_frontend.cpp src/math_util.cpp src/match_store.cpp src/ACE_jni.cpp src/server.cpp
 	src/engine_module.cpp src/cheat_session.cpp src/engine_server.cpp src/attach_client.cpp
-	src/main_cmd_creator.cpp src/status_publisher.cpp
+	src/main_cmd_creator.cpp src/status_publisher.cpp src/string_scanner.cpp
 )
 
 add_library(lib_ACE SHARED ${lib_ACE_src})
